@@ -1,0 +1,11 @@
+.env
+*.db
+*.log
+sales.csv
+top10.png
+report.pdf
+__pycache__/
+.pytest_cache/
+.venv/
+tests/
+.git/
