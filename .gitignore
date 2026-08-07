@@ -1,0 +1,23 @@
+# Секреты: НИКОГДА не коммитить
+.env
+.env.*
+!.env.example
+*.env
+!**/.env.example
+
+# Данные и логи
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Генерируемые артефакты (создаются generate_mock_data.py / report.py)
+sales.csv
+top10.png
+report.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
