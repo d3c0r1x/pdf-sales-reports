@@ -51,6 +51,9 @@ def test_pdf_contains_table_rows(tmp_path) -> None:
     build_chart(report, str(chart))
     build_pdf(report, str(pdf), str(chart))
     assert pdf.stat().st_size > 1500
+    # Кириллица в PDF: стандартные шрифты reportlab (Helvetica/WinAnsi)
+    # кириллицы не содержат, поэтому в PDF обязан быть встроен TTF DejaVu Sans
+    assert b"DejaVuSans" in pdf.read_bytes()
 
 
 def test_cli_parser() -> None:

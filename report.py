@@ -30,6 +30,8 @@ from reportlab.lib import colors  # noqa: E402
 from reportlab.lib.pagesizes import A4  # noqa: E402
 from reportlab.lib.styles import getSampleStyleSheet  # noqa: E402
 from reportlab.lib.units import mm  # noqa: E402
+from reportlab.pdfbase import pdfmetrics  # noqa: E402
+from reportlab.pdfbase.ttfonts import TTFont  # noqa: E402
 from reportlab.platypus import (  # noqa: E402
     Image,
     Paragraph,
@@ -45,6 +47,40 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, "sales.csv")
 CHART_PATH = os.path.join(BASE_DIR, "top10.png")
 PDF_PATH = os.path.join(BASE_DIR, "report.pdf")
+
+
+def _register_cyrillic_font() -> str:
+    """Подключает TTF с кириллицей и возвращает имя базового шрифта.
+
+    Стандартные шрифты reportlab (Helvetica и др.) кириллицы не содержат:
+    русский текст молча превращается в «?». Берём DejaVu Sans — он уже идёт
+    в поставке matplotlib, поэтому ничего дополнительно устанавливать не нужно.
+    """
+    try:
+        mpl_dir = os.path.dirname(matplotlib.__file__)
+        ttf_dir = os.path.join(mpl_dir, "mpl-data", "fonts", "ttf")
+        pdfmetrics.registerFont(
+            TTFont("DejaVuSans", os.path.join(ttf_dir, "DejaVuSans.ttf"))
+        )
+        pdfmetrics.registerFont(
+            TTFont("DejaVuSans-Bold", os.path.join(ttf_dir, "DejaVuSans-Bold.ttf"))
+        )
+        pdfmetrics.registerFontFamily(
+            "DejaVuSans",
+            normal="DejaVuSans",
+            bold="DejaVuSans-Bold",
+            italic="DejaVuSans",
+            boldItalic="DejaVuSans-Bold",
+        )
+        return "DejaVuSans"
+    except Exception:
+        # Теоретический фолбэк: PDF соберётся, но без кириллицы
+        return "Helvetica"
+
+
+FONT_NORMAL = _register_cyrillic_font()
+# Для Helvetica "Helvetica" + "-Bold" — тоже правильное имя, условие не нужно
+FONT_BOLD = FONT_NORMAL + "-Bold"
 
 
 @dataclass
@@ -162,6 +198,10 @@ def build_pdf(
 ) -> None:
     """Собирает PDF-отчёт (reportlab): заголовок, показатели, таблица, график."""
     styles = getSampleStyleSheet()
+    if FONT_NORMAL != "Helvetica":
+        styles["Title"].fontName = FONT_BOLD
+        styles["Heading2"].fontName = FONT_BOLD
+        styles["Normal"].fontName = FONT_NORMAL
     story = [
         Paragraph("Отчёт по продажам (mock-выгрузка из CRM)", styles["Title"]),
         Spacer(1, 6 * mm),
@@ -212,10 +252,10 @@ def _build_table(report: SalesReport) -> Table:
             [
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4C78A8")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, 0), FONT_BOLD),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.whitesmoke]),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                ("FONTNAME", (0, -1), (-1, -1), FONT_BOLD),
                 ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#E8F0FA")),
                 ("ALIGN", (2, 1), (3, -1), "RIGHT"),
             ]
