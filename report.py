@@ -122,23 +122,34 @@ def aggregate_sales(csv_path: str = CSV_PATH, chunksize: int = 10_000) -> SalesR
     per_day: dict[str, int] = {}
     per_category: dict[str, int] = {}
 
-    for chunk in pd.read_csv(csv_path, sep=";", chunksize=chunksize):
-        chunk["margin"] = chunk["revenue"] - chunk["cost"]
-        total_revenue += int(chunk["revenue"].sum())
-        total_margin += int(chunk["margin"].sum())
-        # ISO-даты сравниваются лексикографически корректно
-        chunk_min = str(chunk["date"].min())
-        chunk_max = str(chunk["date"].max())
-        date_min = chunk_min if date_min is None else min(date_min, chunk_min)
-        date_max = chunk_max if date_max is None else max(date_max, chunk_max)
+    try:
+        for chunk in pd.read_csv(csv_path, sep=";", chunksize=chunksize):
+            chunk["margin"] = chunk["revenue"] - chunk["cost"]
+            total_revenue += int(chunk["revenue"].sum())
+            total_margin += int(chunk["margin"].sum())
+            # ISO-даты сравниваются лексикографически корректно
+            chunk_min = str(chunk["date"].min())
+            chunk_max = str(chunk["date"].max())
+            date_min = chunk_min if date_min is None else min(date_min, chunk_min)
+            date_max = chunk_max if date_max is None else max(date_max, chunk_max)
 
-        for name, revenue in chunk.groupby("product_name")["revenue"].sum().items():
-            per_product[name] = per_product.get(name, 0) + int(revenue)
-        for day, revenue in chunk.groupby("date")["revenue"].sum().items():
-            per_day[str(day)] = per_day.get(str(day), 0) + int(revenue)
-        if "category" in chunk.columns:
-            for cat, revenue in chunk.groupby("category")["revenue"].sum().items():
-                per_category[str(cat)] = per_category.get(str(cat), 0) + int(revenue)
+            for name, revenue in chunk.groupby("product_name")["revenue"].sum().items():
+                per_product[name] = per_product.get(name, 0) + int(revenue)
+            for day, revenue in chunk.groupby("date")["revenue"].sum().items():
+                per_day[str(day)] = per_day.get(str(day), 0) + int(revenue)
+            if "category" in chunk.columns:
+                for cat, revenue in chunk.groupby("category")["revenue"].sum().items():
+                    per_category[str(cat)] = per_category.get(str(cat), 0) + int(revenue)
+    except pd.errors.EmptyDataError:
+        raise ValueError(
+            f"Файл {csv_path} пуст — сгенерируйте данные: "
+            "python generate_mock_data.py"
+        ) from None
+    except KeyError as exc:
+        raise ValueError(
+            f"В файле {csv_path} нет столбца {exc}. Ожидаются: date, product_name, "
+            "category, units, revenue, cost"
+        ) from None
 
     top10 = (
         pd.Series(per_product, name="revenue")

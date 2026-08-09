@@ -74,3 +74,23 @@ def test_mock_data_generator(tmp_path) -> None:
     assert rows[0] == ["date", "product_name", "category", "units", "revenue", "cost"]
     assert len(rows) - 1 == generate_mock_data.ROWS
     assert all(len(r) == 6 for r in rows[1:])
+
+
+def test_empty_csv_raises_clear_error(tmp_path) -> None:
+    """Пустой CSV — понятная ошибка с подсказкой, а не трейсбек pandas."""
+    import pytest
+
+    csv_path = tmp_path / "sales.csv"
+    csv_path.write_text("", encoding="utf-8")
+    with pytest.raises(ValueError, match="пуст"):
+        aggregate_sales(str(csv_path))
+
+
+def test_missing_column_raises_clear_error(tmp_path) -> None:
+    """CSV без столбца revenue — ошибка с перечнем ожидаемых столбцов."""
+    import pytest
+
+    csv_path = tmp_path / "sales.csv"
+    csv_path.write_text("date;product_name;units\n2026-07-01;Товар A;1\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="столбца"):
+        aggregate_sales(str(csv_path))
