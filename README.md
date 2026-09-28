@@ -1,5 +1,7 @@
 # PDF Sales Reports
 
+[![CI](https://github.com/d3c0r1x/pdf-sales-reports/actions/workflows/ci.yml/badge.svg)](https://github.com/d3c0r1x/pdf-sales-reports/actions/workflows/ci.yml)
+
 Генератор PDF-отчётов по продажам: выручка, маржинальность, топ-10 товаров таблицей, два графика. Поддерживает работу в двух режимах: **CLI-скрипт** (без Telegram) и **бот**.
 
 ## 🕹 Живое демо
