@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as _dt
 import logging
 import os
 
@@ -62,7 +63,8 @@ async def cmd_report(message: Message) -> None:
         await status.edit_text(f"⚠️ Ошибка генерации: {exc}")
         return
 
-    pdf = FSInputFile(PDF_PATH, filename="sales_report.pdf")
+    period = _period_suffix(report)
+    pdf = FSInputFile(PDF_PATH, filename=f"sales_report_{period}.pdf")
     await message.answer_document(pdf, caption="📄 Отчёт по продажам (PDF)")
     await status.delete()
 
@@ -77,7 +79,7 @@ async def cmd_chart(message: Message) -> None:
         logger.exception("Ошибка построения графика")
         await status.edit_text(f"⚠️ Ошибка: {exc}")
         return
-    png = FSInputFile(CHART_PATH, filename="sales_chart.png")
+    png = FSInputFile(CHART_PATH, filename=f"sales_chart_{_period_suffix(report)}.png")
     await message.answer_document(png, caption="📊 График: топ-10 товаров и динамика выручки")
     await status.delete()
 
@@ -108,6 +110,14 @@ async def cmd_stats(message: Message) -> None:
 
 def _fmt(value: int) -> str:
     return f"{value:,}".replace(",", " ")
+
+
+def _period_suffix(report) -> str:
+    """'2026-09' — суффикс имени файла, чтобы отчёты не перезаписывали друг друга."""
+    try:
+        return _dt.date.fromisoformat(report.date_max).strftime("%Y-%m")
+    except ValueError:
+        return _dt.date.today().strftime("%Y-%m")
 
 
 async def main() -> None:
